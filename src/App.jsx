@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
 const TABS = [
   { id: 'summary', label: 'Пересказ договора' },
@@ -86,21 +86,60 @@ const PLANS = [
 ]
 
 function App() {
+  const demoLimit = 3
+  const fileInputRef = useRef(null)
   const [activeTab, setActiveTab] = useState('summary')
   const [isDragging, setIsDragging] = useState(false)
   const [chatQuestion, setChatQuestion] = useState('')
   const [chatSubmitted, setChatSubmitted] = useState(false)
+  const [remainingChecks, setRemainingChecks] = useState(demoLimit)
+  const [leadName, setLeadName] = useState('')
+  const [leadContact, setLeadContact] = useState('')
+
+  const hasChecksLeft = remainingChecks > 0
 
   const handleDragOver = (e) => {
     e.preventDefault()
+    if (!hasChecksLeft) return
     setIsDragging(true)
   }
 
   const handleDragLeave = () => setIsDragging(false)
 
+  const consumeCheck = () => {
+    setRemainingChecks((current) => (current > 0 ? current - 1 : 0))
+  }
+
   const handleDrop = (e) => {
     e.preventDefault()
+    if (!hasChecksLeft) return
     setIsDragging(false)
+    consumeCheck()
+    setActiveTab('summary')
+  }
+
+  const handleFileSelect = (e) => {
+    if (!hasChecksLeft) return
+    if (e.target.files?.length) {
+      consumeCheck()
+      setActiveTab('summary')
+      e.target.value = ''
+    }
+  }
+
+  const handleSimulateCheck = () => {
+    if (!hasChecksLeft) return
+    consumeCheck()
+    setActiveTab('summary')
+  }
+
+  const handleOpenFilePicker = () => {
+    if (!hasChecksLeft) return
+    fileInputRef.current?.click()
+  }
+
+  const handleLeadSubmit = (e) => {
+    e.preventDefault()
   }
 
   const handleChatSubmit = (e) => {
@@ -291,6 +330,108 @@ function App() {
           margin: 0 auto 4rem;
         }
 
+        .velius-demo-indicator {
+          max-width: 960px;
+          margin: 0 auto 1.1rem;
+          border: 1px solid rgba(16, 185, 129, 0.3);
+          background: rgba(16, 185, 129, 0.06);
+          color: rgba(16, 185, 129, 0.9);
+          padding: 0.7rem 1rem;
+          font-size: 0.73rem;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          animation: veliusFadeIn 0.45s ease;
+        }
+
+        .velius-demo-value {
+          color: #cbd5e1;
+          font-weight: 400;
+        }
+
+        .velius-dropzone-actions {
+          margin-top: 1.25rem;
+          display: flex;
+          justify-content: center;
+        }
+
+        .velius-dropzone-simulate {
+          border: 1px solid rgba(16, 185, 129, 0.35);
+          background: rgba(16, 185, 129, 0.04);
+          color: rgba(16, 185, 129, 0.9);
+          padding: 0.55rem 1rem;
+          font-size: 0.66rem;
+          letter-spacing: 0.14em;
+          text-transform: uppercase;
+          cursor: pointer;
+          transition: border-color 0.3s ease, background 0.3s ease;
+        }
+
+        .velius-dropzone-simulate:hover {
+          border-color: rgba(16, 185, 129, 0.55);
+          background: rgba(16, 185, 129, 0.1);
+        }
+
+        .velius-limit-card {
+          border: 1px solid rgba(203, 213, 225, 0.18);
+          background: #0a0a0a;
+          padding: 2rem;
+          animation: veliusFadeIn 0.55s ease;
+        }
+
+        .velius-limit-title {
+          font-family: 'Cormorant Garamond', Georgia, serif;
+          font-size: 1.7rem;
+          letter-spacing: 0.03em;
+          color: #e2e8f0;
+          margin: 0 0 0.4rem;
+        }
+
+        .velius-limit-sub {
+          margin: 0 0 1.5rem;
+          color: rgba(203, 213, 225, 0.48);
+          font-size: 0.82rem;
+        }
+
+        .velius-limit-form {
+          display: grid;
+          gap: 0.8rem;
+        }
+
+        .velius-limit-input {
+          width: 100%;
+          background: rgba(203, 213, 225, 0.02);
+          border: 1px solid rgba(203, 213, 225, 0.16);
+          color: #cbd5e1;
+          padding: 0.85rem 1rem;
+          font-family: 'IBM Plex Sans', sans-serif;
+          font-size: 0.84rem;
+          outline: none;
+          transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .velius-limit-input:focus {
+          border-color: rgba(16, 185, 129, 0.48);
+          box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.15);
+        }
+
+        .velius-limit-button {
+          margin-top: 0.2rem;
+          border: 1px solid rgba(16, 185, 129, 0.42);
+          background: rgba(16, 185, 129, 0.14);
+          color: #b6f7dd;
+          font-size: 0.68rem;
+          letter-spacing: 0.14em;
+          text-transform: uppercase;
+          padding: 0.85rem 1rem;
+          cursor: pointer;
+          transition: border-color 0.3s ease, background 0.3s ease;
+        }
+
+        .velius-limit-button:hover {
+          border-color: rgba(16, 185, 129, 0.68);
+          background: rgba(16, 185, 129, 0.2);
+        }
+
         .velius-dropzone {
           position: relative;
           padding: 3.5rem 2rem;
@@ -342,10 +483,7 @@ function App() {
         }
 
         .velius-dropzone input {
-          position: absolute;
-          inset: 0;
-          opacity: 0;
-          cursor: pointer;
+          display: none;
         }
 
         /* ── Tabs ── */
@@ -875,26 +1013,64 @@ function App() {
 
         {/* Drop Zone */}
         <div className="velius-dropzone-wrap">
-          <div
-            className={`velius-dropzone${isDragging ? ' dragging' : ''}`}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-          >
-            <input type="file" accept=".pdf,.docx" />
-            <svg className="velius-dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
-              <path d="M12 16V4m0 0l-4 4m4-4l4 4" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M4 20h16" strokeLinecap="round" />
-            </svg>
-            <p className="velius-dropzone-title">
-              Перетащите договор сюда для мгновенного анализа рисков
-            </p>
-            <p className="velius-dropzone-hint">Поддерживаются форматы PDF, DOCX</p>
-          </div>
+          {hasChecksLeft ? (
+            <div
+              className={`velius-dropzone${isDragging ? ' dragging' : ''}`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onClick={handleOpenFilePicker}
+            >
+              <input ref={fileInputRef} type="file" accept=".pdf,.docx" onChange={handleFileSelect} />
+              <svg className="velius-dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
+                <path d="M12 16V4m0 0l-4 4m4-4l4 4" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M4 20h16" strokeLinecap="round" />
+              </svg>
+              <p className="velius-dropzone-title">
+                Перетащите договор сюда для мгновенного анализа рисков
+              </p>
+              <p className="velius-dropzone-hint">Поддерживаются форматы PDF, DOCX</p>
+              <div className="velius-dropzone-actions">
+                <button type="button" className="velius-dropzone-simulate" onClick={handleSimulateCheck}>
+                  Симулировать проверку
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="velius-limit-card">
+              <h3 className="velius-limit-title">Бесплатный лимит исчерпан</h3>
+              <p className="velius-limit-sub">
+                Оставьте контакты, и мы откроем безлимитный доступ для вашей команды.
+              </p>
+              <form className="velius-limit-form" onSubmit={handleLeadSubmit}>
+                <input
+                  className="velius-limit-input"
+                  type="text"
+                  placeholder="Ваше Имя"
+                  value={leadName}
+                  onChange={(e) => setLeadName(e.target.value)}
+                />
+                <input
+                  className="velius-limit-input"
+                  type="text"
+                  placeholder="Email или Telegram для связи"
+                  value={leadContact}
+                  onChange={(e) => setLeadContact(e.target.value)}
+                />
+                <button type="submit" className="velius-limit-button">
+                  Запросить безлимитный доступ для компании
+                </button>
+              </form>
+            </div>
+          )}
         </div>
 
         {/* Tabs */}
         <section className="velius-tabs-section">
+          <div className="velius-demo-indicator">
+            Демо-доступ: Осталось <span className="velius-demo-value">{remainingChecks}</span> из{' '}
+            <span className="velius-demo-value">{demoLimit}</span> бесплатных проверок
+          </div>
           <nav className="velius-tabs-nav" role="tablist" aria-label="Дашборд VELIUS AI">
             {TABS.map((tab) => (
               <button
